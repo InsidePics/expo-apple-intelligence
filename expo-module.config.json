@@ -1,0 +1,6 @@
+{
+  "platforms": ["apple", "ios", "macos"],
+  "apple": {
+    "modules": ["ExpoAppleIntelligenceModule"]
+  }
+}
