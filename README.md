@@ -173,29 +173,6 @@ pnpm open:ios
 
 The native Swift sources live in `ios/` (`ExpoAppleIntelligenceModule.swift`, `VisionHelpers.swift`, `VisionModern.swift`, `VisionProcessors.swift`); the TypeScript surface lives in `src/`. Keep the `@available` gates in the Swift code and the documented minimum-OS values in this README in sync when adding capabilities.
 
-## Publishing
-
-Releases are published to npm via [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers) (OIDC). The `publish.yml` workflow authenticates with npm using a short-lived OIDC token, so **no `NPM_TOKEN` secret is stored in the repo**.
-
-**One-time bootstrap** (a Trusted Publisher can only be configured on a package that already exists on npm):
-
-1. From a maintainer's machine, publish the first version manually:
-   ```sh
-   pnpm build
-   npm publish --access public
-   ```
-2. On npmjs.com, open the package's **Settings → Trusted Publishers** and add a GitHub Actions publisher:
-   - Organization / user: `InsidePics`
-   - Repository: `expo-apple-intelligence`
-   - Workflow filename: `publish.yml`
-   - Action: `npm publish`
-
-**Every release thereafter** is automatic — no token, no manual publish:
-
-1. Bump `version` in `package.json`.
-2. Cut a GitHub Release for that version.
-3. The `publish.yml` workflow runs on the published release and publishes to npm via OIDC (with build provenance).
-
 ## License
 
 MIT © 2026 INSP LLC. See [LICENSE](./LICENSE).

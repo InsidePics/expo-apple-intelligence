@@ -37,9 +37,9 @@
   },
   "files": [
     "build",
-    "ios",
+    "ios/*.swift",
+    "ios/*.podspec",
     "expo-module.config.json",
-    "*.podspec",
     "README.md",
     "LICENSE"
   ],

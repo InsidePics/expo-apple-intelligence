@@ -7,6 +7,9 @@
 __mocks__
 __tests__
 
+# Native unit tests + fixtures are not needed by consumers
+/ios/Tests/
+
 /babel.config.js
 /android/src/androidTest/
 /android/src/test/
