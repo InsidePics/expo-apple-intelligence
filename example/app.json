@@ -13,7 +13,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "expo.modules.nativeml.example"
+      "bundleIdentifier": "expo.modules.nativeml.example",
+      "deploymentTarget": "16.4"
     },
     "android": {
       "adaptiveIcon": {

@@ -1,6 +1,6 @@
 {
   "name": "@insidepics/expo-apple-intelligence",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "packageManager": "pnpm@10.19.0",
   "description": "Expo module for Apple Intelligence: Vision, Foundation Models, SpeechAnalyzer, ImagePlayground",
   "main": "build/index.js",
@@ -46,10 +46,10 @@
   ],
   "devDependencies": {
     "@types/react": "~19.2.10",
-    "expo": "^55.0.8",
-    "expo-module-scripts": "^55.0.2",
-    "expo-modules-test-core": "^55.0.2",
-    "react-native": "0.83.2",
+    "expo": "^56.0.12",
+    "expo-module-scripts": "^56.0.3",
+    "expo-modules-test-core": "^56.0.7",
+    "react-native": "0.85.3",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
