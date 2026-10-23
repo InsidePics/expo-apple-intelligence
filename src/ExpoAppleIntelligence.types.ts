@@ -249,16 +249,12 @@ export type TranscriptionResult = {
 export type ExpoAppleIntelligenceModuleEvents = Record<string, never>;
 
 /**
- * A Float32 tensor as its little-endian bytes. View it without copying:
- * `new Float32Array(t.data.buffer, t.data.byteOffset, t.data.byteLength / 4)`.
+ * One face aligned for a face encoder. `data` is the Float32 tensor's
+ * little-endian bytes; view it without copying with
+ * `new Float32Array(data.buffer, data.byteOffset, data.byteLength / 4)`.
  */
-export interface Float32TensorBytes {
+export interface AlignedFaceTensor {
   data: Uint8Array;
-  /** NCHW, e.g. `[1, 3, 256, 256]`. */
-  shape: number[];
-}
-
-export interface AlignedFaceTensor extends Float32TensorBytes {
   /** Laplacian variance of the aligned crop; higher is sharper. */
   blur: number;
 }

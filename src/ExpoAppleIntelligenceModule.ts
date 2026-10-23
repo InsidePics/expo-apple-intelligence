@@ -18,7 +18,6 @@ import type {
   LensSmudgeResult,
   DocumentRecognitionResult,
   TranscriptionResult,
-  Float32TensorBytes,
   AlignedFaceTensor,
 } from './ExpoAppleIntelligence.types';
 
@@ -104,14 +103,15 @@ declare class ExpoAppleIntelligenceModule extends NativeModule<ExpoAppleIntellig
    * Model input for a square image model (e.g. CLIP): the upright image's
    * shorter side scaled to `size` (nearest neighbour), center-cropped to
    * `size`×`size`, each channel normalized as `(v / 255 - mean) / std`.
-   * The image is decoded natively; only the tensor crosses to JS.
+   * The image is decoded natively; only the tensor crosses to JS, as the
+   * `[1, 3, size, size]` Float32 tensor's little-endian bytes.
    */
   centerCropTensor(
     imagePath: string,
     size: number,
     mean: [number, number, number],
     std: [number, number, number],
-  ): Promise<Float32TensorBytes>;
+  ): Promise<Uint8Array>;
 
   /**
    * Model input for a face encoder: each face's five landmarks (left eye,
@@ -132,8 +132,11 @@ declare class ExpoAppleIntelligenceModule extends NativeModule<ExpoAppleIntellig
   /** Sharpness (Laplacian variance of Rec.601 grey) of the whole image. */
   imageSharpness(imagePath: string): Promise<number>;
 
-  /** Luminance histogram with `bins` bins, normalized to sum to 1. */
-  luminanceHistogram(imagePath: string, bins: number): Promise<number[]>;
+  /**
+   * Luminance histogram with `bins` bins, normalized to sum to 1, as Float32
+   * little-endian bytes.
+   */
+  luminanceHistogram(imagePath: string, bins: number): Promise<Uint8Array>;
 }
 
 export default requireNativeModule<ExpoAppleIntelligenceModule>(

@@ -293,7 +293,7 @@ public class ExpoAppleIntelligenceModule: Module {
       }
       Self.withDecoded(imagePath, promise) { image in
         let tensor = ModelInputs.centerCropTensor(image, size: size, mean: mean, std: std)
-        return ["data": ModelInputs.bytes(tensor), "shape": [1, 3, size, size]]
+        return ModelInputs.bytes(tensor)
       }
     }
 
@@ -308,7 +308,7 @@ public class ExpoAppleIntelligenceModule: Module {
         landmarks.map { points -> Any in
           guard let face = ModelInputs.alignedFace(
             image, landmarks: points, targets: targets, size: size) else { return NSNull() }
-          return ["data": ModelInputs.bytes(face.tensor), "shape": [1, 3, size, size], "blur": face.blur]
+          return ["data": ModelInputs.bytes(face.tensor), "blur": face.blur]
         }
       }
     }
@@ -325,7 +325,7 @@ public class ExpoAppleIntelligenceModule: Module {
         return
       }
       Self.withDecoded(imagePath, promise) { image in
-        ModelInputs.luminanceHistogram(image, bins: bins).map { Double($0) }
+        ModelInputs.bytes(ModelInputs.luminanceHistogram(image, bins: bins))
       }
     }
 
