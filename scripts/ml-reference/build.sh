@@ -5,12 +5,12 @@
 #   scripts/ml-reference/build.sh /path/to/insidepics/monorepo [commit]
 #
 # The reference is the InsidePics monorepo's ML preprocessing as it ran in
-# JS before it moved here: by default commit 9174e4036, the last one with
+# JS before it moved here: by default commit 79a602613, the last one with
 # the JS crop, alignment, blur and histogram paths. The files are read from
 # that commit with `git archive`, so the checkout's own state does not matter.
 set -euo pipefail
 monorepo="$(cd "${1:?usage: build.sh <monorepo checkout> [commit]}" && pwd)"
-commit="${2:-9174e4036}"
+commit="${2:-79a602613}"
 here="$(cd "$(dirname "$0")" && pwd)"
 out="$here/../../ios/Tests/Fixtures/ml-reference.js"
 src="$(mktemp -d)"

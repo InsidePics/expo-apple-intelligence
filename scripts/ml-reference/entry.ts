@@ -1,7 +1,7 @@
 // JS reference for ModelInputParityTests: the InsidePics ML pipeline as it
 // computed model inputs in JS before they moved native (monorepo #791).
 // `clipTensor` and `extractFiveLandmarks` are copied verbatim from monorepo
-// commit 9174e4036 (object/clip.ts, face/align.ts), where they were inline
+// commit 79a602613 (object/clip.ts, face/align.ts), where they were inline
 // or private; everything else is imported from that commit unchanged.
 import { estimateSimilarityTransform, warpAffine } from '@monorepo/ui/src/providers/ml/face/alignMath';
 import { blurScoreFromRgba } from '@monorepo/ui/src/providers/ml/blurMath';

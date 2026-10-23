@@ -9,7 +9,7 @@ import XCTest
 /// monorepo by `scripts/ml-reference/build.sh`: the CLIP crop loop and
 /// pixel-space face alignment as they ran in JS, plus the monorepo's
 /// `alignMath`, `blurMath`, `tensorPrep` and `histogram` modules, all as of
-/// monorepo commit 9174e4036, the last to run them on device. Both sides
+/// monorepo commit 79a602613, the last to run them on device. Both sides
 /// read the same decoded pixels, so any difference is the port's, and the
 /// bar is bit-identical: an embedding computed from the native input must be
 /// the one the JS input produced.
