@@ -119,7 +119,7 @@ Image and audio arguments accept either a plain filesystem path or a `file://` U
 
 ## API reference
 
-The default export is the native module. Every method takes an image (or audio) path string. Vision coordinates are normalized (0–1) with a bottom-left origin, exactly as Apple returns them; face landmark points are normalized to the face bounding box.
+The default export is the native module. Every method takes an image (or audio) path string. Vision coordinates are normalized (0–1) with a bottom-left origin, exactly as Apple returns them; face landmark points are normalized to the face bounding box. Images are analyzed upright: the EXIF orientation is applied first, so every coordinate, `imageWidth`/`imageHeight` and `decodeImagePixels` output is in the frame a viewer shows (an iPhone portrait photo is stored landscape with orientation 6, and comes back portrait).
 
 | Function | Signature | Description | Min OS / Framework |
 | --- | --- | --- | --- |
