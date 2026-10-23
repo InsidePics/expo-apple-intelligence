@@ -3,7 +3,15 @@
 // `clipTensor` and `extractFiveLandmarks` are copied verbatim from monorepo
 // commit 79a602613 (object/clip.ts, face/align.ts), where they were inline
 // or private; everything else is imported from that commit unchanged.
-import { estimateSimilarityTransform, warpAffine } from '@monorepo/ui/src/providers/ml/face/alignMath';
+import {
+  estimateSimilarityTransform,
+  warpAffine,
+  type Point2D,
+} from '@monorepo/ui/src/providers/ml/face/alignMath';
+import type {
+  FaceObservation,
+  NormalizedPoint,
+} from '@monorepo/ui/src/providers/ml/vision';
 import { blurScoreFromRgba } from '@monorepo/ui/src/providers/ml/blurMath';
 import { rgbaToNchwFloat } from '@monorepo/ui/src/providers/ml/face/tensorPrep';
 import { luminanceHistogram } from '@monorepo/ui/src/providers/ml/video/histogram';
@@ -18,7 +26,7 @@ const TARGET_LANDMARKS: Point2D[] = [
   [70.7299, 92.2041], // right mouth
 ];
 
-function clipTensor(pixels, width, height) {
+function clipTensor(pixels: Uint8Array, width: number, height: number) {
   // Scale shorter side to 256, then center-crop 256x256
   const scale = IMAGE_SIZE / Math.min(width, height);
   const scaledW = Math.round(width * scale);
@@ -103,7 +111,12 @@ function extractFiveLandmarks(
 }
 
 
-function alignFace(pixels, width, height, detection) {
+function alignFace(
+  pixels: Uint8Array,
+  width: number,
+  height: number,
+  detection: FaceObservation
+) {
   const landmarks = extractFiveLandmarks(detection, width, height);
   if (!landmarks) return null;
   const transform = estimateSimilarityTransform(landmarks, TARGET_LANDMARKS);

@@ -55,7 +55,8 @@ final class ModelInputBenchmarkTests: XCTestCase {
         // Two native calls, as the app makes them: CLIP, then the faces.
         let clipImage = VisionHelpers.decodeRGBA(path: Self.photo)!
         let clip = ModelInputs.bytes(ModelInputs.centerCropTensor(
-          clipImage, size: 256, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]))
+          clipImage, size: 256,
+          mean: ModelInputParityTests.clipMean, std: ModelInputParityTests.clipStd))
         let faceImage = VisionHelpers.decodeRGBA(path: Self.photo)!
         let aligned = ModelInputs.alignedFace(faceImage, landmarks: face, targets: targets, size: 112)!
         transferred = clip.count + ModelInputs.bytes(aligned.tensor).count

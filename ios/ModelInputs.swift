@@ -18,7 +18,8 @@ enum ModelInputs {
   /// `size`×`size`, and normalize each channel as `(v / 255 - mean) / std`.
   /// Returns `[1, 3, size, size]` Float32, planar R, G, B.
   ///
-  /// Port of `computeClipEmbedding`'s preprocessing (`object/clip.ts`).
+  /// Port of `computeClipEmbedding`'s preprocessing (`object/clip.ts` as of
+  /// monorepo 79a602613; see `Tests/Fixtures/ml-reference.js`).
   static func centerCropTensor(
     _ image: RGBAImage, size: Int, mean: [Double], std: [Double]
   ) -> [Float] {

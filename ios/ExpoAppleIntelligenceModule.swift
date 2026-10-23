@@ -398,12 +398,18 @@ public class ExpoAppleIntelligenceModule: Module {
     }
   }
 
+  /// One at a time: a caller that asks for a photo's CLIP input and its
+  /// faces together would otherwise hold two full-resolution buffers (about
+  /// 96 MB each at 24 MP) at once.
+  private static let modelInputQueue = DispatchQueue(
+    label: "expo.modules.appleintelligence.modelinputs", qos: .userInitiated)
+
   /// Decode `imagePath` upright off the calling thread and resolve with
   /// `build`'s result. The full-resolution pixels never leave native code.
   private static func withDecoded(
     _ imagePath: String, _ promise: Promise, _ build: @escaping (RGBAImage) -> Any
   ) {
-    DispatchQueue.global(qos: .userInitiated).async {
+    modelInputQueue.async {
       guard let image = VisionHelpers.decodeRGBA(path: imagePath) else {
         promise.reject("ERR_LOAD_IMAGE", "Could not decode image at \(imagePath)")
         return

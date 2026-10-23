@@ -58,34 +58,85 @@ final class ModelInputParityTests: XCTestCase {
     var aligned = 0
     for name in Self.photos {
       let image = try decode(name)
-      let pixels = uint8Array(image.pixels)
-      let targets = try XCTUnwrap(reference.objectForKeyedSubscript("targetLandmarks").toArray()
-        as? [[Double]])
-      for face in try faces(name) {
-        let jsFace = try XCTUnwrap(JSValue(object: face, in: js))
-        let expected = reference.invokeMethod(
-          "alignFace", withArguments: [pixels, image.width, image.height, jsFace])
-        // The consumer sends image-normalized landmarks: the pixel-space
-        // extraction at a 1×1 size, since multiplying by 1 is exact.
-        let landmarks = reference.invokeMethod(
-          "extractFiveLandmarks", withArguments: [jsFace, 1, 1])
-        guard let expected, !expected.isNull,
-              let points = landmarks?.toArray() as? [[Double]] else {
-          XCTAssertTrue(expected?.isNull ?? true, "\(name): JS aligned a face native skipped")
-          continue
-        }
-        let actual = try XCTUnwrap(
-          ModelInputs.alignedFace(image, landmarks: points, targets: targets, size: 112), name)
-        assertBitIdentical(
-          actual.tensor, try floats(expected.objectForKeyedSubscript("tensor")), name)
-        XCTAssertEqual(
-          actual.blur.bitPattern, expected.objectForKeyedSubscript("blur").toDouble().bitPattern,
-          "\(name): blur \(actual.blur) vs \(expected.objectForKeyedSubscript("blur").toDouble())")
+      for face in try faces(name) where try assertAlignmentParity(image, face, name) {
         aligned += 1
       }
     }
     // face.jpg and its eight rotated copies at least.
     XCTAssertGreaterThanOrEqual(aligned, 9)
+  }
+
+  /// No Vision needed, so this runs on a simulator too: fixed faces that are
+  /// tilted, tiny, huge, hanging off each edge, or degenerate.
+  func testAlignedFace_syntheticFacesMatchJsBitForBit() throws {
+    var aligned = 0
+    for name in Self.photos {
+      let image = try decode(name)
+      for face in Self.syntheticFaces where try assertAlignmentParity(image, face, name) {
+        aligned += 1
+      }
+    }
+    // Every photo aligns every face but the collapsed one, which both sides
+    // decline or (when the five identical points' mean rounds) both align.
+    XCTAssertGreaterThanOrEqual(aligned, Self.photos.count * (Self.syntheticFaces.count - 1))
+  }
+
+  /// A face as the module serializes it: a Vision box (bottom-left origin)
+  /// and landmark regions normalized to the box.
+  private static func syntheticFace(
+    box: [Double], tilt: Double = 0, collapsed: Bool = false
+  ) -> [String: Any] {
+    func pt(_ x: Double, _ y: Double) -> [String: Double] {
+      collapsed ? ["x": 0.5, "y": 0.5] : ["x": x, "y": y + tilt * (x - 0.5)]
+    }
+    return [
+      "boundingBox": ["x": box[0], "y": box[1], "width": box[2], "height": box[3]],
+      "confidence": 0.99,
+      "landmarks": [
+        "leftEye": [pt(0.25, 0.68), pt(0.38, 0.7)],
+        "rightEye": [pt(0.62, 0.7), pt(0.75, 0.68)],
+        "nose": [pt(0.5, 0.55), pt(0.47, 0.45), pt(0.53, 0.45)],
+        "outerLips": [0.32, 0.38, 0.45, 0.5, 0.55, 0.62, 0.68].map { pt($0, 0.25) },
+      ],
+    ]
+  }
+
+  private static let syntheticFaces = [
+    syntheticFace(box: [0.3, 0.3, 0.4, 0.3]),
+    syntheticFace(box: [0.35, 0.4, 0.3, 0.2], tilt: 0.4),
+    syntheticFace(box: [0.48, 0.48, 0.03, 0.02]),  // a few pixels
+    syntheticFace(box: [-0.2, -0.1, 1.4, 1.2]),  // bigger than the frame
+    syntheticFace(box: [-0.25, 0.2, 0.4, 0.3]),  // off the left edge
+    syntheticFace(box: [0.8, 0.85, 0.4, 0.3], tilt: -0.3),  // off top right
+    syntheticFace(box: [0.3, 0.3, 0.4, 0.3], collapsed: true),  // degenerate
+  ]
+
+  /// Native and JS align `face` identically: the same tensor and blur bits,
+  /// or both decline. Returns whether a face was aligned.
+  private func assertAlignmentParity(
+    _ image: RGBAImage, _ face: [String: Any], _ name: String
+  ) throws -> Bool {
+    let targets = try XCTUnwrap(
+      reference.objectForKeyedSubscript("targetLandmarks").toArray() as? [[Double]])
+    let jsFace = try XCTUnwrap(JSValue(object: face, in: js))
+    let expected = try XCTUnwrap(reference.invokeMethod(
+      "alignFace", withArguments: [uint8Array(image.pixels), image.width, image.height, jsFace]))
+    // The consumer sends image-normalized landmarks: the pixel-space
+    // extraction at a 1×1 size, since multiplying by 1 is exact.
+    let points = reference.invokeMethod("extractFiveLandmarks", withArguments: [jsFace, 1, 1])?
+      .toArray() as? [[Double]]
+    let actual = points.flatMap {
+      ModelInputs.alignedFace(image, landmarks: $0, targets: targets, size: 112)
+    }
+    guard let actual, !expected.isNull else {
+      XCTAssertTrue(expected.isNull, "\(name): JS aligned a face native declined")
+      XCTAssertNil(actual, "\(name): native aligned a face JS declined")
+      return false
+    }
+    assertBitIdentical(actual.tensor, try floats(expected.objectForKeyedSubscript("tensor")), name)
+    let blur = expected.objectForKeyedSubscript("blur").toDouble()
+    XCTAssertEqual(actual.blur.bitPattern, blur.bitPattern, "\(name): blur \(actual.blur) vs \(blur)")
+    return true
   }
 
   func testAlignedFace_degenerateLandmarksAreNil() {
