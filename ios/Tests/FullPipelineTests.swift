@@ -18,18 +18,7 @@ final class FullPipelineTests: XCTestCase {
   // MARK: - Fixture loading
 
   private func fixturePath(_ name: String) -> String {
-    let bundle = Bundle(for: type(of: self))
-    let nameWithoutExt = (name as NSString).deletingPathExtension
-    let ext = (name as NSString).pathExtension
-
-    if let path = bundle.path(forResource: nameWithoutExt, ofType: ext, inDirectory: "Fixtures") {
-      return path
-    }
-    if let path = bundle.path(forResource: nameWithoutExt, ofType: ext) {
-      return path
-    }
-    let testDir = (#filePath as NSString).deletingLastPathComponent
-    return (testDir as NSString).appendingPathComponent("Fixtures/\(name)")
+    FixturePaths.path(name)
   }
 
   private func loadFixture(_ name: String) -> (CGImage, CGFloat, CGFloat)? {

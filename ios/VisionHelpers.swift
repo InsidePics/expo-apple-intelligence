@@ -1,13 +1,14 @@
+import ImageIO
 import Vision
-
-#if canImport(UIKit)
-import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 
 /// Shared helpers for image loading and coordinate serialization.
 enum VisionHelpers {
+  /// Loads an image upright: the EXIF orientation is applied to the pixels,
+  /// so the returned image, its size, every Vision box and landmark computed
+  /// on it, and `decodePixels` all share the frame a viewer shows. Camera
+  /// photos store sensor-orientation pixels plus a tag (an iPhone portrait is
+  /// landscape + orientation 6); ignoring the tag puts every box on the
+  /// photo's side.
   static func loadImage(_ path: String) -> (CGImage, CGFloat, CGFloat)? {
     let url: URL
     if path.hasPrefix("file://") {
@@ -16,17 +17,27 @@ enum VisionHelpers {
     } else {
       url = URL(fileURLWithPath: path)
     }
-    guard let data = try? Data(contentsOf: url) else { return nil }
-
-    #if canImport(UIKit)
-    guard let uiImage = UIImage(data: data),
-          let cgImage = uiImage.cgImage else { return nil }
-    #elseif canImport(AppKit)
-    guard let nsImage = NSImage(data: data),
-          let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
-    #endif
-
+    guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+          let cgImage = uprightImage(source) else { return nil }
     return (cgImage, CGFloat(cgImage.width), CGFloat(cgImage.height))
+  }
+
+  private static func uprightImage(_ source: CGImageSource) -> CGImage? {
+    let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+    let orientation = props?[kCGImagePropertyOrientation] as? UInt32 ?? 1
+    if orientation == CGImagePropertyOrientation.up.rawValue {
+      return CGImageSourceCreateImageAtIndex(source, 0, nil)
+    }
+    // The thumbnail API is ImageIO's way to apply the orientation; sized to
+    // the longest side, it is a full-resolution decode.
+    let width = props?[kCGImagePropertyPixelWidth] as? Int ?? 0
+    let height = props?[kCGImagePropertyPixelHeight] as? Int ?? 0
+    let options: [CFString: Any] = [
+      kCGImageSourceCreateThumbnailFromImageAlways: true,
+      kCGImageSourceCreateThumbnailWithTransform: true,
+      kCGImageSourceThumbnailMaxPixelSize: max(width, height),
+    ]
+    return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
   }
 
   /// Serialize CGRect as-is (normalized 0-1, bottom-left origin).
