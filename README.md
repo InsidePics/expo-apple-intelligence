@@ -27,6 +27,7 @@ Grouped by the Apple framework that backs each capability, with the minimum OS v
 - **Rectangle detection** — bounding box plus four corner points.
 - **Horizon detection** — horizon angle in radians.
 - **Raw pixel decode** — decode any JPEG/PNG/HEIC to base64 RGBA bytes.
+- **Model-ready inputs** — decode natively and return only what an image model reads, as a `Uint8Array` of Float32 bytes: a center-cropped, mean/std-normalized tensor (CLIP-style), and faces aligned from five landmarks to a face encoder's crop, with each crop's blur score. Also whole-image sharpness and a luminance histogram. A 24 MP photo sends about 0.8 MB to JS instead of 128 MB of base64.
 
 ### Vision — modern requests
 
@@ -121,6 +122,8 @@ Image and audio arguments accept either a plain filesystem path or a `file://` U
 
 The default export is the native module. Every method takes an image (or audio) path string. Vision coordinates are normalized (0–1) with a bottom-left origin, exactly as Apple returns them; face landmark points are normalized to the face bounding box. Images are analyzed upright: the EXIF orientation is applied first, so every coordinate, `imageWidth`/`imageHeight` and `decodeImagePixels` output is in the frame a viewer shows (an iPhone portrait photo is stored landscape with orientation 6, and comes back portrait).
 
+The model-input functions return Float32 tensors as `Float32TensorBytes` (`{ data: Uint8Array; shape: number[] }`, little-endian). View one without copying with `new Float32Array(t.data.buffer, t.data.byteOffset, t.data.byteLength / 4)`. Their arithmetic is pinned bit-for-bit to the JS pipeline it replaced by `ios/Tests/ModelInputParityTests.swift`.
+
 | Function | Signature | Description | Min OS / Framework |
 | --- | --- | --- | --- |
 | `analyzeImage` | `(imagePath: string) => Promise<ImageAnalysisResult>` | Runs all available Vision analyses in one pass (most efficient). Includes iOS 26 lens-smudge & document results when available. | iOS 15.1 (Vision); richer fields gated higher |
@@ -136,6 +139,10 @@ The default export is the native module. Every method takes an image (or audio) 
 | `detectRectangles` | `(imagePath: string) => Promise<RectangleObservation[]>` | Rectangle detection with corner points (max 10). | iOS 15.1 / Vision |
 | `detectHorizon` | `(imagePath: string) => Promise<HorizonResult \| null>` | Horizon angle in radians. | iOS 15.1 / Vision |
 | `decodeImagePixels` | `(imagePath: string) => Promise<{ pixels: string; width: number; height: number }>` | Decode any image to base64-encoded RGBA bytes. | iOS 15.1 |
+| `centerCropTensor` | `(imagePath: string, size: number, mean: [n, n, n], std: [n, n, n]) => Promise<Float32TensorBytes>` | Shorter side scaled to `size` (nearest neighbour), center-cropped, `(v / 255 - mean) / std`; `[1, 3, size, size]` planar RGB. | iOS 15.1 |
+| `alignFaces` | `(imagePath: string, landmarks: [x, y][][], targets: [x, y][], size: number) => Promise<(AlignedFaceTensor \| null)[]>` | Per face: five image-normalized landmarks (top-left origin) aligned onto `targets` by a similarity transform and bilinear warp; `[1, 3, size, size]` in `[-1, 1]` plus the crop's `blur`. One decode for all faces; `null` for degenerate landmarks. | iOS 15.1 |
+| `imageSharpness` | `(imagePath: string) => Promise<number>` | Laplacian variance of Rec.601 grey (higher is sharper). | iOS 15.1 |
+| `luminanceHistogram` | `(imagePath: string, bins: number) => Promise<number[]>` | Normalized luminance histogram. | iOS 15.1 |
 | `calculateAesthetics` | `(imagePath: string) => Promise<AestheticsResult \| null>` | Aesthetic quality score + utility-image flag. Returns `null` on older OS. | iOS 18.0 / macOS 15.0 — Vision |
 | `generateImage` | `(prompt: string, style?: 'animation' \| 'illustration' \| 'sketch') => Promise<string \| null>` | Text-to-image; returns a path to the generated JPEG, or `null`. | iOS 18.4 / ImagePlayground |
 | `detectLensSmudge` | `(imagePath: string) => Promise<LensSmudgeResult \| null>` | Lens smudge confidence. Returns `null` on older OS. | iOS 26.0 / macOS 26.0 — Vision |

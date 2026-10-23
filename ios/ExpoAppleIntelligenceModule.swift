@@ -281,6 +281,54 @@ public class ExpoAppleIntelligenceModule: Module {
       }
     }
 
+    // MARK: - Model inputs
+    //
+    // Decode natively and hand JS only what a model reads: a few hundred KB
+    // of Float32 instead of tens of MB of RGBA. See ModelInputs.swift.
+
+    AsyncFunction("centerCropTensor") { (imagePath: String, size: Int, mean: [Double], std: [Double], promise: Promise) in
+      guard size > 0, mean.count == 3, std.count == 3 else {
+        promise.reject("ERR_ARGUMENT", "centerCropTensor needs a positive size and 3 means and stds")
+        return
+      }
+      Self.withDecoded(imagePath, promise) { image in
+        let tensor = ModelInputs.centerCropTensor(image, size: size, mean: mean, std: std)
+        return ["data": ModelInputs.bytes(tensor), "shape": [1, 3, size, size]]
+      }
+    }
+
+    AsyncFunction("alignFaces") { (imagePath: String, landmarks: [[[Double]]], targets: [[Double]], size: Int, promise: Promise) in
+      let isPoint = { (p: [Double]) in p.count == 2 }
+      guard size > 0, targets.count == 5, targets.allSatisfy(isPoint),
+            landmarks.allSatisfy({ $0.count == 5 && $0.allSatisfy(isPoint) }) else {
+        promise.reject("ERR_ARGUMENT", "alignFaces needs five [x, y] landmarks per face and five targets")
+        return
+      }
+      Self.withDecoded(imagePath, promise) { image in
+        landmarks.map { points -> Any in
+          guard let face = ModelInputs.alignedFace(
+            image, landmarks: points, targets: targets, size: size) else { return NSNull() }
+          return ["data": ModelInputs.bytes(face.tensor), "shape": [1, 3, size, size], "blur": face.blur]
+        }
+      }
+    }
+
+    AsyncFunction("imageSharpness") { (imagePath: String, promise: Promise) in
+      Self.withDecoded(imagePath, promise) { image in
+        ModelInputs.blurScore(image.pixels, width: image.width, height: image.height)
+      }
+    }
+
+    AsyncFunction("luminanceHistogram") { (imagePath: String, bins: Int, promise: Promise) in
+      guard bins > 0 else {
+        promise.reject("ERR_ARGUMENT", "luminanceHistogram needs at least one bin")
+        return
+      }
+      Self.withDecoded(imagePath, promise) { image in
+        ModelInputs.luminanceHistogram(image, bins: bins).map { Double($0) }
+      }
+    }
+
     // MARK: - Foundation Models (iOS 26+)
 
     Function("isFoundationModelAvailable") { () -> Bool in
@@ -347,6 +395,20 @@ public class ExpoAppleIntelligenceModule: Module {
       } catch {
         promise.reject("ERR_VISION", error.localizedDescription)
       }
+    }
+  }
+
+  /// Decode `imagePath` upright off the calling thread and resolve with
+  /// `build`'s result. The full-resolution pixels never leave native code.
+  private static func withDecoded(
+    _ imagePath: String, _ promise: Promise, _ build: @escaping (RGBAImage) -> Any
+  ) {
+    DispatchQueue.global(qos: .userInitiated).async {
+      guard let image = VisionHelpers.decodeRGBA(path: imagePath) else {
+        promise.reject("ERR_LOAD_IMAGE", "Could not decode image at \(imagePath)")
+        return
+      }
+      promise.resolve(build(image))
     }
   }
 }

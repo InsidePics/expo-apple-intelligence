@@ -50,21 +50,42 @@ enum VisionHelpers {
 
   /// Decode a CGImage to raw RGBA pixel data.
   static func decodePixels(_ cgImage: CGImage) -> Data? {
+    decodeRGBA(cgImage).map { Data($0.pixels) }
+  }
+
+  /// Decode a CGImage to RGBA: 8 bits per channel, DeviceRGB, alpha
+  /// premultiplied last. `decodePixels` hands exactly these bytes to JS, and
+  /// `ModelInputs` reads them, so a model input built natively starts from
+  /// the same pixels the JS pipeline started from.
+  static func decodeRGBA(_ cgImage: CGImage) -> RGBAImage? {
     let w = cgImage.width
     let h = cgImage.height
-    let bytesPerRow = w * 4
     var pixels = [UInt8](repeating: 0, count: w * h * 4)
-
-    guard let ctx = CGContext(
-      data: &pixels,
-      width: w, height: h,
-      bitsPerComponent: 8,
-      bytesPerRow: bytesPerRow,
-      space: CGColorSpaceCreateDeviceRGB(),
-      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-    ) else { return nil }
-
-    ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: w, height: h))
-    return Data(pixels)
+    let drawn = pixels.withUnsafeMutableBytes { buffer -> Bool in
+      guard let ctx = CGContext(
+        data: buffer.baseAddress,
+        width: w, height: h,
+        bitsPerComponent: 8,
+        bytesPerRow: w * 4,
+        space: CGColorSpaceCreateDeviceRGB(),
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+      ) else { return false }
+      ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: w, height: h))
+      return true
+    }
+    return drawn ? RGBAImage(width: w, height: h, pixels: pixels) : nil
   }
+
+  /// `loadImage` then `decodeRGBA`: the upright full-resolution pixels.
+  static func decodeRGBA(path: String) -> RGBAImage? {
+    guard let (cgImage, _, _) = loadImage(path) else { return nil }
+    return decodeRGBA(cgImage)
+  }
+}
+
+/// Decoded RGBA pixels, row-major, `width * height * 4` bytes.
+struct RGBAImage {
+  let width: Int
+  let height: Int
+  let pixels: [UInt8]
 }
