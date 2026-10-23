@@ -28,14 +28,11 @@ enum VisionHelpers {
     if orientation == CGImagePropertyOrientation.up.rawValue {
       return CGImageSourceCreateImageAtIndex(source, 0, nil)
     }
-    // The thumbnail API is ImageIO's way to apply the orientation; sized to
-    // the longest side, it is a full-resolution decode.
-    let width = props?[kCGImagePropertyPixelWidth] as? Int ?? 0
-    let height = props?[kCGImagePropertyPixelHeight] as? Int ?? 0
+    // The thumbnail API is ImageIO's way to apply the orientation; with no
+    // max pixel size it is a full-resolution decode.
     let options: [CFString: Any] = [
       kCGImageSourceCreateThumbnailFromImageAlways: true,
       kCGImageSourceCreateThumbnailWithTransform: true,
-      kCGImageSourceThumbnailMaxPixelSize: max(width, height),
     ]
     return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
   }

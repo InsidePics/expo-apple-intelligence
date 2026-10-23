@@ -34,8 +34,7 @@ final class OrientationTests: XCTestCase {
     for tag in Self.tags {
       for format in Self.formats {
         let name = "face-orientation-\(tag).\(format)"
-        let url = URL(fileURLWithPath: FixturePaths.path(name))
-        let source = try XCTUnwrap(CGImageSourceCreateWithURL(url as CFURL, nil), name)
+        let source = try imageSource(name)
         let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
         XCTAssertEqual(props?[kCGImagePropertyOrientation] as? Int, tag, name)
 
@@ -75,8 +74,7 @@ final class OrientationTests: XCTestCase {
     // Guards the tolerance above: an upside-down decode of the same face must
     // fail it, or the pixel test could not tell a rotation from noise.
     let reference = try decoded("face.jpg")
-    let url = URL(fileURLWithPath: FixturePaths.path("face-orientation-3.jpg"))
-    let source = try XCTUnwrap(CGImageSourceCreateWithURL(url as CFURL, nil))
+    let source = try imageSource("face-orientation-3.jpg")
     let raw = try XCTUnwrap(CGImageSourceCreateImageAtIndex(source, 0, nil))
     let pixels = try XCTUnwrap(VisionHelpers.decodePixels(raw))
     XCTAssertGreaterThan(meanAbsoluteDifference([UInt8](pixels), reference), 20)
@@ -107,6 +105,12 @@ final class OrientationTests: XCTestCase {
   }
 
   // MARK: - Helpers
+
+  /// The fixture as ImageIO stores it, before any orientation is applied.
+  private func imageSource(_ name: String) throws -> CGImageSource {
+    let url = URL(fileURLWithPath: FixturePaths.path(name))
+    return try XCTUnwrap(CGImageSourceCreateWithURL(url as CFURL, nil), name)
+  }
 
   private func decoded(_ name: String) throws -> [UInt8] {
     let (image, _, _) = try XCTUnwrap(VisionHelpers.loadImage(FixturePaths.path(name)), name)
