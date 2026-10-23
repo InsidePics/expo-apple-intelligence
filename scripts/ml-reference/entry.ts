@@ -1,12 +1,12 @@
 // JS reference for ModelInputParityTests: the InsidePics ML pipeline as it
-// computed model inputs in JS before they moved native (#791).
-// clipTensor and extractFiveLandmarks are verbatim from monorepo commit
-// 9174e4036 (object/clip.ts, face/align.ts); the rest is imported unchanged.
+// computed model inputs in JS before they moved native (monorepo #791).
+// `clipTensor` and `extractFiveLandmarks` are copied verbatim from monorepo
+// commit 9174e4036 (object/clip.ts, face/align.ts), where they were inline
+// or private; everything else is imported from that commit unchanged.
 import { estimateSimilarityTransform, warpAffine } from '@monorepo/ui/src/providers/ml/face/alignMath';
 import { blurScoreFromRgba } from '@monorepo/ui/src/providers/ml/blurMath';
 import { rgbaToNchwFloat } from '@monorepo/ui/src/providers/ml/face/tensorPrep';
 import { luminanceHistogram } from '@monorepo/ui/src/providers/ml/video/histogram';
-import { alignmentLandmarks } from '@monorepo/ui/src/providers/ml/face/align';
 
 const IMAGE_SIZE = 256;
 const CROP_SIZE = 112;
@@ -116,7 +116,7 @@ function alignFace(pixels, width, height, detection) {
 globalThis.MLReference = {
   clipTensor,
   alignFace,
-  alignmentLandmarks,
+  extractFiveLandmarks,
   targetLandmarks: TARGET_LANDMARKS,
   blurScoreFromRgba,
   luminanceHistogram,

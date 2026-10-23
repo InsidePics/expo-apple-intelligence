@@ -8,7 +8,8 @@ import XCTest
 /// `Fixtures/ml-reference.js` is that pipeline, bundled from the InsidePics
 /// monorepo by `scripts/ml-reference/build.sh`: the CLIP crop loop and
 /// pixel-space face alignment as they ran in JS, plus the monorepo's
-/// `alignMath`, `blurMath`, `tensorPrep` and `histogram` modules. Both sides
+/// `alignMath`, `blurMath`, `tensorPrep` and `histogram` modules, all as of
+/// monorepo commit 9174e4036, the last to run them on device. Both sides
 /// read the same decoded pixels, so any difference is the port's, and the
 /// bar is bit-identical: an embedding computed from the native input must be
 /// the one the JS input produced.
@@ -64,7 +65,10 @@ final class ModelInputParityTests: XCTestCase {
         let jsFace = try XCTUnwrap(JSValue(object: face, in: js))
         let expected = reference.invokeMethod(
           "alignFace", withArguments: [pixels, image.width, image.height, jsFace])
-        let landmarks = reference.invokeMethod("alignmentLandmarks", withArguments: [jsFace])
+        // The consumer sends image-normalized landmarks: the pixel-space
+        // extraction at a 1×1 size, since multiplying by 1 is exact.
+        let landmarks = reference.invokeMethod(
+          "extractFiveLandmarks", withArguments: [jsFace, 1, 1])
         guard let expected, !expected.isNull,
               let points = landmarks?.toArray() as? [[Double]] else {
           XCTAssertTrue(expected?.isNull ?? true, "\(name): JS aligned a face native skipped")

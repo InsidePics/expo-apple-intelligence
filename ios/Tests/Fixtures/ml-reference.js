@@ -158,37 +158,7 @@
     return hist;
   }
 
-  // packages/ui/src/providers/ml/face/align.ts
-  function alignmentLandmarks(face) {
-    const lm = face.landmarks;
-    if (!lm) return null;
-    const bbox = face.boundingBox;
-    function lift(x, y) {
-      return [bbox.x + x * bbox.width, 1 - (bbox.y + y * bbox.height)];
-    }
-    function regionCenter(region) {
-      if (!region || region.length === 0) return null;
-      let sx = 0, sy = 0;
-      for (const pt of region) {
-        sx += pt.x;
-        sy += pt.y;
-      }
-      return lift(sx / region.length, sy / region.length);
-    }
-    function regionPoint(region, idx) {
-      if (!region || idx >= region.length) return null;
-      return lift(region[idx].x, region[idx].y);
-    }
-    const leftEye = regionCenter(lm.leftEye);
-    const rightEye = regionCenter(lm.rightEye);
-    const nose = regionCenter(lm.nose);
-    const leftMouth = regionPoint(lm.outerLips, 0);
-    const rightMouth = regionPoint(lm.outerLips, 6);
-    if (!leftEye || !rightEye || !nose || !leftMouth || !rightMouth) return null;
-    return [leftEye, rightEye, nose, leftMouth, rightMouth];
-  }
-
-  // ../../../../../expo-apple-intelligence/scripts/ml-reference/entry.ts
+  // scripts/ml-reference/entry.ts
   var IMAGE_SIZE = 256;
   var CROP_SIZE = 112;
   var TARGET_LANDMARKS = [
@@ -270,7 +240,7 @@
   globalThis.MLReference = {
     clipTensor,
     alignFace,
-    alignmentLandmarks,
+    extractFiveLandmarks,
     targetLandmarks: TARGET_LANDMARKS,
     blurScoreFromRgba,
     luminanceHistogram
