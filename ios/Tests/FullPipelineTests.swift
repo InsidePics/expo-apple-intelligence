@@ -136,33 +136,39 @@ final class FullPipelineTests: XCTestCase {
 
   func testDetectBarcodes_findsQRCode() throws {
     try XCTSkipIf(isSimulator, "Barcode detection requires Neural Engine")
-    guard let (cgImage, _, _) = loadFixture("barcode.jpg") else {
-      XCTFail("Could not load barcode.jpg fixture")
-      return
-    }
+    let barcodes = try detectBarcodes("qrcode.jpg")
 
-    let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-    let req = VNDetectBarcodesRequest()
-    try handler.perform([req])
-
-    let barcodes = VisionProcessors.processBarcodes(
-      req.results ?? []
-    )
-
-    XCTAssertGreaterThanOrEqual(barcodes.count, 1, "Should detect QR code in barcode image")
-
+    XCTAssertGreaterThanOrEqual(barcodes.count, 1, "Should detect the QR code on the phone screen")
     if let first = barcodes.first {
-      let symbology = first["symbology"] as! String
-      XCTAssertTrue(
-        symbology.lowercased().contains("qr") || symbology.contains("QR"),
-        "Detected barcode should be QR format, got: \(symbology)"
-      )
+      XCTAssertEqual(first["symbology"] as? String, VNBarcodeSymbology.qr.rawValue)
       // Corner points should be present
       XCTAssertNotNil(first["topLeft"] as? [String: Double])
       XCTAssertNotNil(first["topRight"] as? [String: Double])
       XCTAssertNotNil(first["bottomLeft"] as? [String: Double])
       XCTAssertNotNil(first["bottomRight"] as? [String: Double])
     }
+  }
+
+  func testDetectBarcodes_readsEAN13Label() throws {
+    try XCTSkipIf(isSimulator, "Barcode detection requires Neural Engine")
+    let barcodes = try detectBarcodes("barcode.jpg")
+
+    XCTAssertGreaterThanOrEqual(barcodes.count, 1, "Should detect the price label's barcode")
+    if let first = barcodes.first {
+      XCTAssertEqual(first["symbology"] as? String, VNBarcodeSymbology.ean13.rawValue)
+      XCTAssertEqual(first["payloadStringValue"] as? String, "2404105001722")
+    }
+  }
+
+  private func detectBarcodes(_ fixture: String) throws -> [[String: Any]] {
+    guard let (cgImage, _, _) = loadFixture(fixture) else {
+      XCTFail("Could not load \(fixture) fixture")
+      return []
+    }
+    let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+    let req = VNDetectBarcodesRequest()
+    try handler.perform([req])
+    return VisionProcessors.processBarcodes(req.results ?? [])
   }
 
   func testDetectBarcodes_noneInLandscape() throws {
@@ -280,8 +286,6 @@ final class FullPipelineTests: XCTestCase {
 
     let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
 
-    let faceLandmarksReq = VNDetectFaceLandmarksRequest()
-    let faceQualityReq = VNDetectFaceCaptureQualityRequest()
     let textReq = VNRecognizeTextRequest()
     textReq.recognitionLevel = .accurate
     let classifyReq = VNClassifyImageRequest()
@@ -290,17 +294,13 @@ final class FullPipelineTests: XCTestCase {
     let horizonReq = VNDetectHorizonRequest()
 
     let requests: [VNRequest] = [
-      faceLandmarksReq, faceQualityReq, textReq, classifyReq,
-      barcodeReq, featurePrintReq, horizonReq,
+      textReq, classifyReq, barcodeReq, featurePrintReq, horizonReq,
     ]
 
     try handler.perform(requests)
 
-    // Face should be detected
-    let faces = VisionProcessors.processFaces(
-      landmarks: faceLandmarksReq.results ?? [],
-      quality: faceQualityReq.results ?? []
-    )
+    // Face should be detected, as analyzeImage does it: after the batch
+    let faces = try VisionProcessors.detectFaces(handler)
     XCTAssertGreaterThanOrEqual(faces.count, 1, "Batch: should detect face")
 
     // Classification should return labels

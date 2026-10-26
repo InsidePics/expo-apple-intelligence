@@ -20,8 +20,6 @@ public class ExpoAppleIntelligenceModule: Module {
       DispatchQueue.global(qos: .userInitiated).async {
         let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
 
-        let faceLandmarksReq = VNDetectFaceLandmarksRequest()
-        let faceQualityReq = VNDetectFaceCaptureQualityRequest()
         let textReq = VNRecognizeTextRequest()
         textReq.recognitionLevel = .accurate
         let classifyReq = VNClassifyImageRequest()
@@ -38,7 +36,7 @@ public class ExpoAppleIntelligenceModule: Module {
         let horizonReq = VNDetectHorizonRequest()
 
         var requests: [VNRequest] = [
-          faceLandmarksReq, faceQualityReq, textReq, classifyReq, barcodeReq,
+          textReq, classifyReq, barcodeReq,
           bodyPoseReq, handPoseReq, featurePrintReq, attentionReq, objectnessReq,
           animalReq, rectangleReq, horizonReq,
         ]
@@ -50,12 +48,15 @@ public class ExpoAppleIntelligenceModule: Module {
           requests.append(req)
         }
 
-        do { try handler.perform(requests) } catch {
+        let faces: [[String: Any]]
+        do {
+          try handler.perform(requests)
+          faces = try VisionProcessors.detectFaces(handler)
+        } catch {
           promise.reject("ERR_ANALYSIS", error.localizedDescription)
           return
         }
 
-        let faces = VisionProcessors.processFaces(landmarks: faceLandmarksReq.results ?? [], quality: faceQualityReq.results ?? [])
         let text = VisionProcessors.processText(textReq.results ?? [])
         let labels = VisionProcessors.processClassification(classifyReq.results ?? [])
         let barcodes = VisionProcessors.processBarcodes(barcodeReq.results ?? [])
@@ -125,10 +126,7 @@ public class ExpoAppleIntelligenceModule: Module {
 
     AsyncFunction("detectFaces") { (imagePath: String, promise: Promise) in
       Self.runVision(imagePath, promise: promise) { handler in
-        let lReq = VNDetectFaceLandmarksRequest()
-        let qReq = VNDetectFaceCaptureQualityRequest()
-        try handler.perform([lReq, qReq])
-        return VisionProcessors.processFaces(landmarks: lReq.results ?? [], quality: qReq.results ?? [])
+        try VisionProcessors.detectFaces(handler)
       }
     }
 
