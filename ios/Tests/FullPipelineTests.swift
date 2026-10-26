@@ -280,8 +280,6 @@ final class FullPipelineTests: XCTestCase {
 
     let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
 
-    let faceLandmarksReq = VNDetectFaceLandmarksRequest()
-    let faceQualityReq = VNDetectFaceCaptureQualityRequest()
     let textReq = VNRecognizeTextRequest()
     textReq.recognitionLevel = .accurate
     let classifyReq = VNClassifyImageRequest()
@@ -290,17 +288,13 @@ final class FullPipelineTests: XCTestCase {
     let horizonReq = VNDetectHorizonRequest()
 
     let requests: [VNRequest] = [
-      faceLandmarksReq, faceQualityReq, textReq, classifyReq,
-      barcodeReq, featurePrintReq, horizonReq,
+      textReq, classifyReq, barcodeReq, featurePrintReq, horizonReq,
     ]
 
     try handler.perform(requests)
 
-    // Face should be detected
-    let faces = VisionProcessors.processFaces(
-      landmarks: faceLandmarksReq.results ?? [],
-      quality: faceQualityReq.results ?? []
-    )
+    // Face should be detected, as analyzeImage does it: after the batch
+    let faces = try VisionProcessors.detectFaces(handler)
     XCTAssertGreaterThanOrEqual(faces.count, 1, "Batch: should detect face")
 
     // Classification should return labels

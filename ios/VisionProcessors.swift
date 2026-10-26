@@ -8,6 +8,20 @@ enum VisionProcessors {
 
   // MARK: - Faces
 
+  /// Landmarks, then capture quality measured on those same faces. Run side by
+  /// side, the two requests each detect faces of their own, whose UUIDs never
+  /// match, so most faces lost their quality.
+  static func detectFaces(_ handler: VNImageRequestHandler) throws -> [[String: Any]] {
+    let landmarksReq = VNDetectFaceLandmarksRequest()
+    try handler.perform([landmarksReq])
+    let faces = landmarksReq.results ?? []
+    if faces.isEmpty { return [] }
+    let qualityReq = VNDetectFaceCaptureQualityRequest()
+    qualityReq.inputFaceObservations = faces
+    try handler.perform([qualityReq])
+    return processFaces(landmarks: faces, quality: qualityReq.results ?? [])
+  }
+
   static func processFaces(
     landmarks landmarkObs: [VNFaceObservation],
     quality qualityObs: [VNFaceObservation]
