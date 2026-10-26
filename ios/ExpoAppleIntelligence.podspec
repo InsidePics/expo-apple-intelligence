@@ -34,5 +34,10 @@ Pod::Spec.new do |s|
     test_spec.source_files = 'Tests/**/*.swift'
     test_spec.resources = 'Tests/Fixtures/*'
     test_spec.frameworks = 'XCTest'
+    # ExpoModulesCore pulls in React Native's C++ codegen.
+    test_spec.libraries = 'c++'
+    # Unhosted test bundles run only on simulators and Macs; a host app lets
+    # them run on an iPhone, where Vision uses the Neural Engine.
+    test_spec.requires_app_host = true
   end
 end
