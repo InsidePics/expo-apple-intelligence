@@ -1,5 +1,19 @@
 # @insidepics/expo-apple-intelligence
 
+> [!IMPORTANT]
+> **This repository is archived. The package is now [`expo-apple-ml`](https://www.npmjs.com/package/expo-apple-ml)**,
+> developed in [InsidePics/ml](https://github.com/InsidePics/ml/tree/main/packages/expo-apple-ml)
+> beside [`expo-ml-kit`](https://www.npmjs.com/package/expo-ml-kit) and
+> [`expo-image-ml-tools`](https://www.npmjs.com/package/expo-image-ml-tools).
+> `@insidepics/expo-apple-intelligence` (0.1.0–0.3.1) is deprecated on npm. To move:
+>
+> ```sh
+> npm uninstall @insidepics/expo-apple-intelligence && npx expo install expo-apple-ml
+> ```
+>
+> From 0.4.0, image functions take an Expo image handle (`ImageRef`) instead of a path; see the
+> [new README](https://github.com/InsidePics/ml/tree/main/packages/expo-apple-ml#readme).
+
 [![npm version](https://img.shields.io/npm/v/@insidepics/expo-apple-intelligence.svg)](https://www.npmjs.com/package/@insidepics/expo-apple-intelligence)
 [![npm downloads](https://img.shields.io/npm/dm/@insidepics/expo-apple-intelligence.svg)](https://www.npmjs.com/package/@insidepics/expo-apple-intelligence)
 [![CI](https://github.com/InsidePics/expo-apple-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/InsidePics/expo-apple-intelligence/actions/workflows/ci.yml)
